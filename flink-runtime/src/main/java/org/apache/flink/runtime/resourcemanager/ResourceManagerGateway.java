@@ -41,6 +41,8 @@ import org.apache.flink.runtime.taskexecutor.FileType;
 import org.apache.flink.runtime.taskexecutor.SlotReport;
 import org.apache.flink.runtime.taskexecutor.TaskExecutor;
 
+import javax.annotation.Nullable;
+
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -90,7 +92,6 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 *
 	 * @param taskExecutorAddress The address of the TaskExecutor that registers
 	 * @param resourceId The resource ID of the TaskExecutor that registers
-	 * @param slotReport The slot report containing free and allocated task slots
 	 * @param dataPort port used for data communication between TaskExecutors
 	 * @param hardwareDescription of the registering TaskExecutor
 	 * @param timeout The timeout for the response.
@@ -100,9 +101,22 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	CompletableFuture<RegistrationResponse> registerTaskExecutor(
 		String taskExecutorAddress,
 		ResourceID resourceId,
-		SlotReport slotReport,
 		int dataPort,
 		HardwareDescription hardwareDescription,
+		@RpcTimeout Time timeout);
+
+	/**
+	 * Sends the given {@link SlotReport} to the ResourceManager.
+	 *
+	 * @param taskManagerRegistrationId id identifying the sending TaskManager
+	 * @param slotReport which is sent to the ResourceManager
+	 * @param timeout for the operation
+	 * @return Future which is completed with {@link Acknowledge} once the slot report has been received.
+	 */
+	CompletableFuture<Acknowledge> sendSlotReport(
+		ResourceID taskManagerResourceId,
+		InstanceID taskManagerRegistrationId,
+		SlotReport slotReport,
 		@RpcTimeout Time timeout);
 
 	/**
@@ -118,26 +132,12 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 		AllocationID oldAllocationId);
 
 	/**
-	 * Registers an infoMessage listener
+	 * Deregister Flink from the underlying resource management system.
 	 *
-	 * @param infoMessageListenerAddress address of infoMessage listener to register to this resource manager
+	 * @param finalStatus final status with which to deregister the Flink application
+	 * @param diagnostics additional information for the resource management system, can be {@code null}
 	 */
-	void registerInfoMessageListener(String infoMessageListenerAddress);
-
-	/**
-	 * Unregisters an infoMessage listener
-	 *
-	 * @param infoMessageListenerAddress address of infoMessage listener to unregister from this resource manager
-	 *
-	 */
-	void unRegisterInfoMessageListener(String infoMessageListenerAddress);
-
-	/**
-	 * shutdown cluster
-	 * @param finalStatus
-	 * @param optionalDiagnostics
-	 */
-	void shutDownCluster(final ApplicationStatus finalStatus, final String optionalDiagnostics);
+	CompletableFuture<Acknowledge> deregisterApplication(final ApplicationStatus finalStatus, @Nullable final String diagnostics);
 
 	/**
 	 * Gets the currently registered number of TaskManagers.
@@ -209,7 +209,7 @@ public interface ResourceManagerGateway extends FencedRpcGateway<ResourceManager
 	 * @param timeout for the asynchronous operation
 	 * @return Future containing the collection of resource ids and the corresponding metric query service path
 	 */
-	CompletableFuture<Collection<Tuple2<ResourceID, String>>> requestTaskManagerMetricQueryServicePaths(@RpcTimeout Time timeout);
+	CompletableFuture<Collection<Tuple2<ResourceID, String>>> requestTaskManagerMetricQueryServiceAddresses(@RpcTimeout Time timeout);
 
 	/**
 	 * Request the file upload from the given {@link TaskExecutor} to the cluster's {@link BlobServer}. The

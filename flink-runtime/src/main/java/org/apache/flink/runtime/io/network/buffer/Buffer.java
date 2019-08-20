@@ -60,11 +60,23 @@ public interface Buffer {
 	void tagAsEvent();
 
 	/**
-	 * Returns the underlying memory segment.
+	 * Returns the underlying memory segment. This method is dangerous since it ignores read only protections and omits
+	 * slices. Use it only along the {@link #getMemorySegmentOffset()}.
+	 *
+	 * <p>This method will be removed in the future. For writing use {@link BufferBuilder}.
 	 *
 	 * @return the memory segment backing this buffer
 	 */
+	@Deprecated
 	MemorySegment getMemorySegment();
+
+	/**
+	 * This method will be removed in the future. For writing use {@link BufferBuilder}.
+	 *
+	 * @return the offset where this (potential slice) {@link Buffer}'s data start in the underlying memory segment.
+	 */
+	@Deprecated
+	int getMemorySegmentOffset();
 
 	/**
 	 * Gets the buffer's recycler.
@@ -145,17 +157,6 @@ public interface Buffer {
 	 * 		if the index is less than <tt>0</tt> or greater than {@link #getSize()}
 	 */
 	void setReaderIndex(int readerIndex) throws IndexOutOfBoundsException;
-
-	/**
-	 * Returns the size of the written data, i.e. the <tt>writer index</tt>, of this buffer in an
-	 * non-synchronized fashion.
-	 *
-	 * <p>This is where writable bytes start in the backing memory segment.
-	 *
-	 * @return writer index (from 0 (inclusive) to the size of the backing {@link MemorySegment}
-	 * (inclusive))
-	 */
-	int getSizeUnsafe();
 
 	/**
 	 * Returns the size of the written data, i.e. the <tt>writer index</tt>, of this buffer.

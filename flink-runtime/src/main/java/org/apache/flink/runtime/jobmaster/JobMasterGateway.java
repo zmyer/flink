@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.jobmaster;
 
-import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.checkpoint.CheckpointCoordinatorGateway;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
@@ -33,18 +33,19 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobStatus;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
-import org.apache.flink.runtime.jobmaster.message.ClassloadingProps;
 import org.apache.flink.runtime.messages.Acknowledge;
-import org.apache.flink.runtime.messages.FlinkJobNotFoundException;
 import org.apache.flink.runtime.messages.webmonitor.JobDetails;
 import org.apache.flink.runtime.registration.RegistrationResponse;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerId;
+import org.apache.flink.runtime.rest.handler.legacy.backpressure.OperatorBackPressureStatsResponse;
 import org.apache.flink.runtime.rpc.FencedRpcGateway;
 import org.apache.flink.runtime.rpc.RpcTimeout;
+import org.apache.flink.runtime.taskexecutor.AccumulatorReport;
 import org.apache.flink.runtime.taskexecutor.slot.SlotOffer;
 import org.apache.flink.runtime.taskmanager.TaskExecutionState;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
-import org.apache.flink.runtime.webmonitor.RestfulGateway;
+
+import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -55,7 +56,6 @@ import java.util.concurrent.CompletableFuture;
 public interface JobMasterGateway extends
 	CheckpointCoordinatorGateway,
 	FencedRpcGateway<JobMasterId>,
-	RestfulGateway,
 	KvStateLocationOracle,
 	KvStateRegistryGateway {
 
@@ -66,14 +66,6 @@ public interface JobMasterGateway extends
 	 * @return Future acknowledge of the operation
 	 */
 	CompletableFuture<Acknowledge> cancel(@RpcTimeout Time timeout);
-
-	/**
-	 * Cancel the currently executed job.
-	 *
-	 * @param timeout of this operation
-	 * @return Future acknowledge if the cancellation was successful
-	 */
-	CompletableFuture<Acknowledge> stop(@RpcTimeout Time timeout);
 
 	/**
 	 * Updates the task execution state for a given task.
@@ -147,11 +139,6 @@ public interface JobMasterGateway extends
 		final Exception cause);
 
 	/**
-	 * Request the classloading props of this job.
-	 */
-	CompletableFuture<ClassloadingProps> requestClassloadingProps();
-
-	/**
 	 * Offers the given slots to the job manager. The response contains the set of accepted slots.
 	 *
 	 * @param taskManagerId identifying the task manager
@@ -192,8 +179,11 @@ public interface JobMasterGateway extends
 	 * Sends the heartbeat to job manager from task manager.
 	 *
 	 * @param resourceID unique id of the task manager
+	 * @param accumulatorReport report containing accumulator updates
 	 */
-	void heartbeatFromTaskManager(final ResourceID resourceID);
+	void heartbeatFromTaskManager(
+		final ResourceID resourceID,
+		final AccumulatorReport accumulatorReport);
 
 	/**
 	 * Sends heartbeat request from the resource manager.
@@ -219,16 +209,65 @@ public interface JobMasterGateway extends
 	CompletableFuture<JobStatus> requestJobStatus(@RpcTimeout Time timeout);
 
 	/**
-	 * Requests the {@link ArchivedExecutionGraph} for the given jobId. If there is no such graph, then
-	 * the future is completed with a {@link FlinkJobNotFoundException}.
+	 * Requests the {@link ArchivedExecutionGraph} of the executed job.
 	 *
-	 * <p>Note: We enforce that the returned future contains a {@link ArchivedExecutionGraph} unlike
-	 * the super interface.
-	 *
-	 * @param jobId identifying the job whose AccessExecutionGraph is requested
-	 * @param timeout for the asynchronous operation
-	 * @return Future containing the AccessExecutionGraph for the given jobId, otherwise {@link FlinkJobNotFoundException}
+	 * @param timeout for the rpc call
+	 * @return Future which is completed with the {@link ArchivedExecutionGraph} of the executed job
 	 */
-	@Override
-	CompletableFuture<ArchivedExecutionGraph> requestJob(JobID jobId, @RpcTimeout Time timeout);
+	CompletableFuture<ArchivedExecutionGraph> requestJob(@RpcTimeout Time timeout);
+
+	/**
+	 * Triggers taking a savepoint of the executed job.
+	 *
+	 * @param targetDirectory to which to write the savepoint data or null if the
+	 *                           default savepoint directory should be used
+	 * @param timeout for the rpc call
+	 * @return Future which is completed with the savepoint path once completed
+	 */
+	CompletableFuture<String> triggerSavepoint(
+		@Nullable final String targetDirectory,
+		final boolean cancelJob,
+		@RpcTimeout final Time timeout);
+
+	/**
+	 * Stops the job with a savepoint.
+	 *
+	 * @param targetDirectory to which to write the savepoint data or null if the
+	 *                           default savepoint directory should be used
+	 * @param advanceToEndOfEventTime Flag indicating if the source should inject a {@code MAX_WATERMARK} in the pipeline
+	 *                              to fire any registered event-time timers
+	 * @param timeout for the rpc call
+	 * @return Future which is completed with the savepoint path once completed
+	 */
+	CompletableFuture<String> stopWithSavepoint(
+		@Nullable final String targetDirectory,
+		final boolean advanceToEndOfEventTime,
+		@RpcTimeout final Time timeout);
+
+	/**
+	 * Requests the statistics on operator back pressure.
+	 *
+	 * @param jobVertexId JobVertex for which the stats are requested.
+	 * @return A Future to the {@link OperatorBackPressureStatsResponse}.
+	 */
+	CompletableFuture<OperatorBackPressureStatsResponse> requestOperatorBackPressureStats(JobVertexID jobVertexId);
+
+	/**
+	 * Notifies that the allocation has failed.
+	 *
+	 * @param allocationID the failed allocation id.
+	 * @param cause the reason that the allocation failed
+	 */
+	void notifyAllocationFailure(AllocationID allocationID, Exception cause);
+
+	/**
+	 * Update the aggregate and return the new value.
+	 *
+	 * @param aggregateName The name of the aggregate to update
+	 * @param aggregand The value to add to the aggregate
+	 * @param serializedAggregationFunction The function to apply to the current aggregate and aggregand to
+	 * obtain the new aggregate value, this should be of type {@link AggregateFunction}
+	 * @return The updated aggregate
+	 */
+	CompletableFuture<Object> updateGlobalAggregate(String aggregateName, Object aggregand, byte[] serializedAggregationFunction);
 }

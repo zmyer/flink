@@ -46,8 +46,9 @@ import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.operators.testutils.MockInputSplitProvider;
 import org.apache.flink.runtime.query.KvStateRegistry;
 import org.apache.flink.runtime.query.TaskKvStateRegistry;
-import org.apache.flink.runtime.state.TaskLocalStateStore;
 import org.apache.flink.runtime.state.TaskStateManager;
+import org.apache.flink.runtime.taskexecutor.GlobalAggregateManager;
+import org.apache.flink.runtime.taskexecutor.TestGlobalAggregateManager;
 import org.apache.flink.runtime.taskmanager.TaskManagerRuntimeInfo;
 import org.apache.flink.runtime.util.TestingTaskManagerRuntimeInfo;
 import org.apache.flink.util.Preconditions;
@@ -99,9 +100,13 @@ public class StreamMockEnvironment implements Environment {
 
 	private final TaskStateManager taskStateManager;
 
+	private final GlobalAggregateManager aggregateManager;
+
 	private volatile boolean wasFailedExternally = false;
 
 	private TaskEventDispatcher taskEventDispatcher = mock(TaskEventDispatcher.class);
+
+	private TaskManagerRuntimeInfo taskManagerRuntimeInfo = new TestingTaskManagerRuntimeInfo();
 
 	public StreamMockEnvironment(
 		Configuration jobConfig,
@@ -151,6 +156,7 @@ public class StreamMockEnvironment implements Environment {
 		this.memManager = new MemoryManager(memorySize, 1);
 		this.ioManager = new IOManagerAsync();
 		this.taskStateManager = Preconditions.checkNotNull(taskStateManager);
+		this.aggregateManager = new TestGlobalAggregateManager();
 		this.inputSplitProvider = inputSplitProvider;
 		this.bufferSize = bufferSize;
 
@@ -159,8 +165,6 @@ public class StreamMockEnvironment implements Environment {
 
 		KvStateRegistry registry = new KvStateRegistry();
 		this.kvStateRegistry = registry.createTaskRegistry(jobID, getJobVertexId());
-
-		final TaskLocalStateStore localStateStore = new TaskLocalStateStore(jobID, getJobVertexId(), subtaskIndex);
 	}
 
 	public StreamMockEnvironment(
@@ -289,6 +293,11 @@ public class StreamMockEnvironment implements Environment {
 	}
 
 	@Override
+	public GlobalAggregateManager getGlobalAggregateManager() {
+		return aggregateManager;
+	}
+
+	@Override
 	public AccumulatorRegistry getAccumulatorRegistry() {
 		return accumulatorRegistry;
 	}
@@ -304,10 +313,11 @@ public class StreamMockEnvironment implements Environment {
 
 	@Override
 	public void acknowledgeCheckpoint(long checkpointId, CheckpointMetrics checkpointMetrics, TaskStateSnapshot subtaskState) {
-		taskStateManager.reportStateHandles(
+		taskStateManager.reportTaskStateSnapshots(
 			new CheckpointMetaData(checkpointId, 0L),
 			checkpointMetrics,
-			subtaskState);
+			subtaskState,
+			null);
 	}
 
 	@Override
@@ -324,7 +334,11 @@ public class StreamMockEnvironment implements Environment {
 
 	@Override
 	public TaskManagerRuntimeInfo getTaskManagerInfo() {
-		return new TestingTaskManagerRuntimeInfo();
+		return this.taskManagerRuntimeInfo;
+	}
+
+	public void setTaskManagerInfo(TaskManagerRuntimeInfo taskManagerRuntimeInfo) {
+		this.taskManagerRuntimeInfo = taskManagerRuntimeInfo;
 	}
 
 	@Override

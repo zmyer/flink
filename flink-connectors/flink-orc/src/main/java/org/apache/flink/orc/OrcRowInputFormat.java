@@ -304,7 +304,6 @@ public class OrcRowInputFormat extends FileInputFormat<Row> implements ResultTyp
 	@Override
 	public void closeInputFormat() throws IOException {
 		this.rows = null;
-		this.rows = null;
 		this.schema = null;
 		this.rowBatch = null;
 	}
@@ -391,6 +390,11 @@ public class OrcRowInputFormat extends FileInputFormat<Row> implements ResultTyp
 		for (int i = 0; i < numPreds; i++) {
 			conjunctPredicates.add((Predicate) in.readObject());
 		}
+	}
+
+	@Override
+	public boolean supportsMultiPaths() {
+		return true;
 	}
 
 	// --------------------------------------------------------------------------------------------

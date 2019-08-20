@@ -61,12 +61,14 @@ public class TaskManagerProcessFailureStreamingRecoveryITCase extends AbstractTa
 	private static final int DATA_COUNT = 10000;
 
 	@Override
-	public void testTaskManagerFailure(int jobManagerPort, final File coordinateDir) throws Exception {
+	public void testTaskManagerFailure(Configuration configuration, final File coordinateDir) throws Exception {
 
 		final File tempCheckpointDir = tempFolder.newFolder();
 
-		StreamExecutionEnvironment env = StreamExecutionEnvironment
-				.createRemoteEnvironment("localhost", jobManagerPort);
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment(
+			"localhost",
+			1337, // not needed since we use ZooKeeper
+			configuration);
 		env.setParallelism(PARALLELISM);
 		env.getConfig().disableSysoutLogging();
 		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(1, 1000));

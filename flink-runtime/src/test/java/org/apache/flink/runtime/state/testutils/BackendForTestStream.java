@@ -56,19 +56,19 @@ public class BackendForTestStream extends MemoryStateBackend {
 
 	// make no reconfiguration!
 	@Override
-	public MemoryStateBackend configure(Configuration config) {
+	public MemoryStateBackend configure(Configuration config, ClassLoader classLoader) {
 		return this;
 	}
 
 	@Override
-	public CheckpointStorage createCheckpointStorage(JobID jobId) throws IOException {
+	public CheckpointStorage createCheckpointStorage(JobID jobId) {
 		return new TestCheckpointStorage();
 	}
 
 	// ------------------------------------------------------------------------
 
 	public interface StreamFactory
-			extends SupplierWithException<CheckpointStateOutputStream, Exception>, java.io.Serializable {}
+			extends SupplierWithException<CheckpointStateOutputStream, IOException>, java.io.Serializable {}
 
 	// ------------------------------------------------------------------------
 
@@ -85,27 +85,27 @@ public class BackendForTestStream extends MemoryStateBackend {
 		}
 
 		@Override
-		public CompletedCheckpointStorageLocation resolveCheckpoint(String pointer) throws IOException {
+		public CompletedCheckpointStorageLocation resolveCheckpoint(String pointer) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public CheckpointStorageLocation initializeLocationForCheckpoint(long checkpointId) throws IOException {
+		public CheckpointStorageLocation initializeLocationForCheckpoint(long checkpointId) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public CheckpointStorageLocation initializeLocationForSavepoint(long checkpointId, @Nullable String externalLocationPointer) throws IOException {
+		public CheckpointStorageLocation initializeLocationForSavepoint(long checkpointId, @Nullable String externalLocationPointer) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public CheckpointStreamFactory resolveCheckpointStorageLocation(long checkpointId, CheckpointStorageLocationReference reference) throws IOException {
+		public CheckpointStreamFactory resolveCheckpointStorageLocation(long checkpointId, CheckpointStorageLocationReference reference) {
 			return streamFactory;
 		}
 
 		@Override
-		public CheckpointStateOutputStream createTaskOwnedStateStream() throws IOException {
+		public CheckpointStateOutputStream createTaskOwnedStateStream() {
 			throw new UnsupportedOperationException();
 		}
 	}
@@ -119,7 +119,7 @@ public class BackendForTestStream extends MemoryStateBackend {
 		}
 
 		@Override
-		public CheckpointStateOutputStream createCheckpointStateOutputStream(CheckpointedStateScope scope) throws Exception {
+		public CheckpointStateOutputStream createCheckpointStateOutputStream(CheckpointedStateScope scope) throws IOException {
 			return streamFactory.get();
 		}
 	}

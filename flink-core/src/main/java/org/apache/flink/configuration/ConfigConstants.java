@@ -72,7 +72,7 @@ public final class ConfigConstants {
 	 */
 	@PublicEvolving
 	public static final ConfigOption<String> RESTART_STRATEGY_FIXED_DELAY_DELAY =
-		key("restart-strategy.fixed-delay.delay").defaultValue("1 s");
+		key("restart-strategy.fixed-delay.delay").defaultValue("0 s");
 
 	/**
 	 * Maximum number of restarts in given time interval {@link #RESTART_STRATEGY_FAILURE_RATE_FAILURE_RATE_INTERVAL} before failing a job
@@ -191,7 +191,10 @@ public final class ConfigConstants {
 
 	/**
 	 * The config parameter defining the task manager's hostname.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#HOST} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_HOSTNAME_KEY = "taskmanager.hostname";
 
 	/**
@@ -201,13 +204,17 @@ public final class ConfigConstants {
 	public static final String TASK_MANAGER_IPC_PORT_KEY = "taskmanager.rpc.port";
 
 	/**
-	 * The config parameter defining the task manager's data port from the configuration.
+	 * @deprecated use {@link NettyShuffleEnvironmentOptions#DATA_PORT} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_DATA_PORT_KEY = "taskmanager.data.port";
 
 	/**
 	 * Config parameter to override SSL support for taskmanager's data transport.
+	 *
+	 * @deprecated use {@link NettyShuffleEnvironmentOptions#DATA_SSL_ENABLED} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_DATA_SSL_ENABLED = "taskmanager.data.ssl.enabled";
 
 	/**
@@ -263,7 +270,7 @@ public final class ConfigConstants {
 	 * The config parameter defining the number of buffers used in the network stack. This defines the
 	 * number of possible tasks and shuffles.
 	 *
-	 * @deprecated Use {@link TaskManagerOptions#NETWORK_NUM_BUFFERS} instead
+	 * @deprecated Use {@link NettyShuffleEnvironmentOptions#NETWORK_NUM_BUFFERS} instead
 	 */
 	@Deprecated
 	public static final String TASK_MANAGER_NETWORK_NUM_BUFFERS_KEY = "taskmanager.network.numberOfBuffers";
@@ -277,46 +284,67 @@ public final class ConfigConstants {
 	public static final String TASK_MANAGER_MEMORY_SEGMENT_SIZE_KEY = "taskmanager.memory.segment-size";
 
 	/**
-	 * The implementation to use for spillable/spilled intermediate results, which have both
-	 * synchronous and asynchronous implementations: "sync" or "async".
+	 * @deprecated Not used anymore
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_NETWORK_DEFAULT_IO_MODE = "taskmanager.network.defaultIOMode";
 
 	/**
 	 * The config parameter defining the number of task slots of a task manager.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#NUM_TASK_SLOTS} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_NUM_TASK_SLOTS = "taskmanager.numberOfTaskSlots";
 
 	/**
 	 * Flag indicating whether to start a thread, which repeatedly logs the memory usage of the JVM.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#DEBUG_MEMORY_LOG} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_DEBUG_MEMORY_USAGE_START_LOG_THREAD = "taskmanager.debug.memory.startLogThread";
 
 	/**
 	 * The interval (in ms) for the log thread to log the current memory usage.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#DEBUG_MEMORY_USAGE_LOG_INTERVAL_MS} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_DEBUG_MEMORY_USAGE_LOG_INTERVAL_MS = "taskmanager.debug.memory.logIntervalMs";
 
 	/**
 	 * Defines the maximum time it can take for the TaskManager registration. If the duration is
 	 * exceeded without a successful registration, then the TaskManager terminates.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#REGISTRATION_TIMEOUT} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_MAX_REGISTRATION_DURATION = "taskmanager.maxRegistrationDuration";
 
 	/**
 	 * The initial registration pause between two consecutive registration attempts. The pause
 	 * is doubled for each new registration attempt until it reaches the maximum registration pause.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#INITIAL_REGISTRATION_BACKOFF} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_INITIAL_REGISTRATION_PAUSE = "taskmanager.initial-registration-pause";
 
 	/**
 	 * The maximum registration pause between two consecutive registration attempts.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#REGISTRATION_MAX_BACKOFF} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_MAX_REGISTARTION_PAUSE = "taskmanager.max-registration-pause";
 
 	/**
 	 * The pause after a registration has been refused by the job manager before retrying to connect.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#REFUSED_REGISTRATION_BACKOFF} instead
 	 */
+	@Deprecated
 	public static final String TASK_MANAGER_REFUSED_REGISTRATION_PAUSE = "taskmanager.refused-registration-pause";
 
 	/**
@@ -329,21 +357,21 @@ public final class ConfigConstants {
 	// --------------------------- Runtime Algorithms -------------------------------
 
 	/**
-	 * Parameter for the maximum fan for out-of-core algorithms.
-	 * Corresponds to the maximum fan-in for merge-sorts and the maximum fan-out
-	 * for hybrid hash joins.
+	 * @deprecated use {@link AlgorithmOptions#SPILLING_MAX_FAN} instead
 	 */
+	@Deprecated
 	public static final String DEFAULT_SPILLING_MAX_FAN_KEY = "taskmanager.runtime.max-fan";
 
 	/**
-	 * Key for the default spilling threshold. When more than the threshold memory of the sort buffers is full, the
-	 * sorter will start spilling to disk.
+	 * @deprecated use {@link AlgorithmOptions#SORT_SPILLING_THRESHOLD instead}
 	 */
+	@Deprecated
 	public static final String DEFAULT_SORT_SPILLING_THRESHOLD_KEY = "taskmanager.runtime.sort-spilling-threshold";
 
 	/**
-	 * Parameter to switch hash join bloom filters for spilled partitions on and off.
+	 * @deprecated use {@link AlgorithmOptions#HASH_JOIN_BLOOM_FILTERS} instead
 	 */
+	@Deprecated
 	public static final String RUNTIME_HASH_JOIN_BLOOM_FILTERS_KEY = "taskmanager.runtime.hashjoin-bloom-filters";
 
 	/**
@@ -643,12 +671,18 @@ public final class ConfigConstants {
 
 	/**
 	 * Key to specify whether the file systems should simply overwrite existing files.
+	 *
+	 * @deprecated Use {@link CoreOptions#FILESYTEM_DEFAULT_OVERRIDE} instead.
 	 */
+	@Deprecated
 	public static final String FILESYSTEM_DEFAULT_OVERWRITE_KEY = "fs.overwrite-files";
 
 	/**
 	 * Key to specify whether the file systems should always create a directory for the output, even with a parallelism of one.
+	 *
+	 * @deprecated Use {@link CoreOptions#FILESYSTEM_OUTPUT_ALWAYS_CREATE_DIRECTORY} instead.
 	 */
+	@Deprecated
 	public static final String FILESYSTEM_OUTPUT_ALWAYS_CREATE_DIRECTORY_KEY = "fs.output.always-create-directory";
 
 	// ---------------------------- Compiler -------------------------------
@@ -656,18 +690,27 @@ public final class ConfigConstants {
 	/**
 	 * The maximum number of line samples to be taken by the delimited input format, if no
 	 * other value is specified for the data source.
+	 *
+	 * @deprecated use {@link OptimizerOptions#DELIMITED_FORMAT_MAX_LINE_SAMPLES} instead
 	 */
+	@Deprecated
 	public static final String DELIMITED_FORMAT_MAX_LINE_SAMPLES_KEY = "compiler.delimited-informat.max-line-samples";
 
 	/**
 	 * The minimum number of line samples to be taken by the delimited input format, if no
 	 * other value is specified for the data source.
+	 *
+	 * @deprecated use {@link OptimizerOptions#DELIMITED_FORMAT_MIN_LINE_SAMPLES} instead
 	 */
+	@Deprecated
 	public static final String DELIMITED_FORMAT_MIN_LINE_SAMPLES_KEY = "compiler.delimited-informat.min-line-samples";
 
 	/**
 	 * The maximum length of a single sampled record before the sampling is aborted.
+	 *
+	 * @deprecated use {@link OptimizerOptions#DELIMITED_FORMAT_MAX_SAMPLE_LEN} instead
 	 */
+	@Deprecated
 	public static final String DELIMITED_FORMAT_MAX_SAMPLE_LENGTH_KEY = "compiler.delimited-informat.max-sample-len";
 
 
@@ -1198,6 +1241,9 @@ public final class ConfigConstants {
 	/** The class of the reporter to use. This is used as a suffix in an actual reporter config */
 	public static final String METRICS_REPORTER_CLASS_SUFFIX = "class";
 
+	/** The class of the reporter factory to use. This is used as a suffix in an actual reporter config */
+	public static final String METRICS_REPORTER_FACTORY_CLASS_SUFFIX = "factory.class";
+
 	/** The interval between reports. This is used as a suffix in an actual reporter config */
 	public static final String METRICS_REPORTER_INTERVAL_SUFFIX = "interval";
 
@@ -1294,8 +1340,9 @@ public final class ConfigConstants {
 		BlobServerOptions.CLEANUP_INTERVAL.defaultValue();
 
 	/**
-	 * The default network port to connect to for communication with the job manager.
+	 * @deprecated use {@link JobManagerOptions#PORT} instead
 	 */
+	@Deprecated
 	public static final int DEFAULT_JOB_MANAGER_IPC_PORT = 6123;
 
 	/**
@@ -1344,12 +1391,18 @@ public final class ConfigConstants {
 	/**
 	 * The default network port the task manager expects to receive transfer envelopes on. The {@code 0} means that
 	 * the TaskManager searches for a free port.
+	 *
+	 * @deprecated use {@link NettyShuffleEnvironmentOptions#DATA_PORT} instead
 	 */
+	@Deprecated
 	public static final int DEFAULT_TASK_MANAGER_DATA_PORT = 0;
 
 	/**
 	 * The default value to override ssl support for task manager's data transport.
+	 *
+	 * @deprecated use {@link NettyShuffleEnvironmentOptions#DATA_SSL_ENABLED} instead
 	 */
+	@Deprecated
 	public static final boolean DEFAULT_TASK_MANAGER_DATA_SSL_ENABLED = true;
 
 	/**
@@ -1371,7 +1424,7 @@ public final class ConfigConstants {
 	/**
 	 * Config key has been deprecated. Therefore, no default value required.
 	 *
-	 * @deprecated {@link TaskManagerOptions#NETWORK_NUM_BUFFERS} provides the default value now
+	 * @deprecated {@link NettyShuffleEnvironmentOptions#NETWORK_NUM_BUFFERS} provides the default value now
 	 */
 	@Deprecated
 	public static final int DEFAULT_TASK_MANAGER_NETWORK_NUM_BUFFERS = 2048;
@@ -1385,39 +1438,57 @@ public final class ConfigConstants {
 	public static final int DEFAULT_TASK_MANAGER_MEMORY_SEGMENT_SIZE = 32768;
 
 	/**
-	 * The implementation to use for spillable/spilled intermediate results, which have both
-	 * synchronous and asynchronous implementations: "sync" or "async".
+	 * @deprecated Not used anymore
 	 */
+	@Deprecated
 	public static final String DEFAULT_TASK_MANAGER_NETWORK_DEFAULT_IO_MODE = "sync";
 
 	/**
 	 * Flag indicating whether to start a thread, which repeatedly logs the memory usage of the JVM.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#DEBUG_MEMORY_LOG} instead
 	 */
+	@Deprecated
 	public static final boolean DEFAULT_TASK_MANAGER_DEBUG_MEMORY_USAGE_START_LOG_THREAD = false;
 
 	/**
 	 * The interval (in ms) for the log thread to log the current memory usage.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#DEBUG_MEMORY_USAGE_LOG_INTERVAL_MS} instead
 	 */
+	@Deprecated
 	public static final long DEFAULT_TASK_MANAGER_DEBUG_MEMORY_USAGE_LOG_INTERVAL_MS = 5000L;
 
 	/**
 	 * The default task manager's maximum registration duration.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#REGISTRATION_TIMEOUT} instead
 	 */
+	@Deprecated
 	public static final String DEFAULT_TASK_MANAGER_MAX_REGISTRATION_DURATION = "Inf";
 
 	/**
 	 * The default task manager's initial registration pause.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#INITIAL_REGISTRATION_BACKOFF} instead
 	 */
+	@Deprecated
 	public static final String DEFAULT_TASK_MANAGER_INITIAL_REGISTRATION_PAUSE = "500 ms";
 
 	/**
 	 * The default task manager's maximum registration pause.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#REGISTRATION_MAX_BACKOFF} instead
 	 */
+	@Deprecated
 	public static final String DEFAULT_TASK_MANAGER_MAX_REGISTRATION_PAUSE = "30 s";
 
 	/**
 	 * The default task manager's refused registration pause.
+	 *
+	 * @deprecated use {@link TaskManagerOptions#REFUSED_REGISTRATION_BACKOFF} instead
 	 */
+	@Deprecated
 	public static final String DEFAULT_TASK_MANAGER_REFUSED_REGISTRATION_PAUSE = "10 s";
 
 	/**
@@ -1435,18 +1506,21 @@ public final class ConfigConstants {
 	// ------------------------ Runtime Algorithms ------------------------
 
 	/**
-	 * Default setting for the switch for hash join bloom filters for spilled partitions.
+	 * @deprecated use {@link AlgorithmOptions#HASH_JOIN_BLOOM_FILTERS} instead
 	 */
+	@Deprecated
 	public static final boolean DEFAULT_RUNTIME_HASH_JOIN_BLOOM_FILTERS = false;
 
 	/**
-	 * The default value for the maximum spilling fan in/out.
+	 * @deprecated use {@link AlgorithmOptions#SPILLING_MAX_FAN} insstead
 	 */
+	@Deprecated
 	public static final int DEFAULT_SPILLING_MAX_FAN = 128;
 
 	/**
-	 * The default percentage of the sort memory to be full before data is spilled.
+	 * @deprecated use {@link AlgorithmOptions#SORT_SPILLING_THRESHOLD} instead
 	 */
+	@Deprecated
 	public static final float DEFAULT_SORT_SPILLING_THRESHOLD = 0.8f;
 
 	/**
@@ -1546,7 +1620,10 @@ public final class ConfigConstants {
 
 	/**
 	 * The default behavior for output directory creating (create only directory when parallelism &gt; 1).
+	 *
+	 * @deprecated Use {@link CoreOptions#FILESYSTEM_OUTPUT_ALWAYS_CREATE_DIRECTORY} instead.
 	 */
+	@Deprecated
 	public static final boolean DEFAULT_FILESYSTEM_ALWAYS_CREATE_DIRECTORY = false;
 
 
@@ -1554,17 +1631,26 @@ public final class ConfigConstants {
 
 	/**
 	 * The default maximum number of line samples taken by the delimited input format.
+	 *
+	 * @deprecated use {@link OptimizerOptions#DELIMITED_FORMAT_MAX_LINE_SAMPLES} instead
 	 */
+	@Deprecated
 	public static final int DEFAULT_DELIMITED_FORMAT_MAX_LINE_SAMPLES = 10;
 
 	/**
 	 * The default minimum number of line samples taken by the delimited input format.
+	 *
+	 * @deprecated use {@link OptimizerOptions#DELIMITED_FORMAT_MIN_LINE_SAMPLES} instead
 	 */
+	@Deprecated
 	public static final int DEFAULT_DELIMITED_FORMAT_MIN_LINE_SAMPLES = 2;
 
 	/**
 	 * The default maximum sample length before sampling is aborted (2 MiBytes).
+	 *
+	 * @deprecated use {@link OptimizerOptions#DELIMITED_FORMAT_MAX_SAMPLE_LEN} instead
 	 */
+	@Deprecated
 	public static final int DEFAULT_DELIMITED_FORMAT_MAX_SAMPLE_LEN = 2 * 1024 * 1024;
 
 
@@ -1921,6 +2007,12 @@ public final class ConfigConstants {
 
 	/** The environment variable name which contains the location of the lib folder. */
 	public static final String ENV_FLINK_LIB_DIR = "FLINK_LIB_DIR";
+
+	/** The environment variable name which contains the location of the opt directory. */
+	public static final String ENV_FLINK_OPT_DIR = "FLINK_OPT_DIR";
+
+	/** The environment variable name which contains the location of the plugins folder. */
+	public static final String ENV_FLINK_PLUGINS_DIR = "FLINK_PLUGINS_DIR";
 
 	/** The environment variable name which contains the location of the bin directory. */
 	public static final String ENV_FLINK_BIN_DIR = "FLINK_BIN_DIR";

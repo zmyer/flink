@@ -35,6 +35,7 @@ import java.io.StringWriter;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -81,12 +82,15 @@ public final class ExceptionUtils {
 	 * <p>Currently considered fatal exceptions are Virtual Machine errors indicating
 	 * that the JVM is corrupted, like {@link InternalError}, {@link UnknownError},
 	 * and {@link java.util.zip.ZipError} (a special case of InternalError).
+	 * The {@link ThreadDeath} exception is also treated as a fatal error, because when
+	 * a thread is forcefully stopped, there is a high chance that parts of the system
+	 * are in an inconsistent state.
 	 *
 	 * @param t The exception to check.
 	 * @return True, if the exception is considered fatal to the JVM, false otherwise.
 	 */
 	public static boolean isJvmFatalError(Throwable t) {
-		return (t instanceof InternalError) || (t instanceof UnknownError);
+		return (t instanceof InternalError) || (t instanceof UnknownError) || (t instanceof ThreadDeath);
 	}
 
 	/**
@@ -256,6 +260,18 @@ public final class ExceptionUtils {
 	}
 
 	/**
+	 * Tries to throw the given exception if not null.
+	 *
+	 * @param e exception to throw if not null.
+	 * @throws Exception
+	 */
+	public static void tryRethrowException(@Nullable Exception e) throws Exception {
+		if (e != null) {
+			throw e;
+		}
+	}
+
+	/**
 	 * Tries to throw the given {@code Throwable} in scenarios where the signatures allows only IOExceptions
 	 * (and RuntimeException and Error). Throws this exception directly, if it is an IOException,
 	 * a RuntimeException, or an Error. Otherwise does nothing.
@@ -323,6 +339,30 @@ public final class ExceptionUtils {
 	}
 
 	/**
+	 * Checks whether a throwable chain contains an exception matching a predicate and returns it.
+	 *
+	 * @param throwable the throwable chain to check.
+	 * @param predicate the predicate of the exception to search for in the chain.
+	 * @return Optional throwable of the requested type if available, otherwise empty
+	 */
+	public static Optional<Throwable> findThrowable(Throwable throwable, Predicate<Throwable> predicate) {
+		if (throwable == null || predicate == null) {
+			return Optional.empty();
+		}
+
+		Throwable t = throwable;
+		while (t != null) {
+			if (predicate.test(t)) {
+				return Optional.of(t);
+			} else {
+				t = t.getCause();
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	/**
 	 * Checks whether a throwable chain contains a specific error message and returns the corresponding throwable.
 	 *
 	 * @param throwable the throwable chain to check.
@@ -336,7 +376,7 @@ public final class ExceptionUtils {
 
 		Throwable t = throwable;
 		while (t != null) {
-			if (t.getMessage().contains(searchMessage)) {
+			if (t.getMessage() != null && t.getMessage().contains(searchMessage)) {
 				return Optional.of(t);
 			} else {
 				t = t.getCause();
@@ -354,11 +394,7 @@ public final class ExceptionUtils {
 	 * @return Cause of ExecutionException or given Throwable
 	 */
 	public static Throwable stripExecutionException(Throwable throwable) {
-		while (throwable instanceof ExecutionException && throwable.getCause() != null) {
-			throwable = throwable.getCause();
-		}
-
-		return throwable;
+		return stripException(throwable, ExecutionException.class);
 	}
 
 	/**
@@ -369,11 +405,23 @@ public final class ExceptionUtils {
 	 * @return Cause of CompletionException or given Throwable
 	 */
 	public static Throwable stripCompletionException(Throwable throwable) {
-		while (throwable instanceof CompletionException && throwable.getCause() != null) {
-			throwable = throwable.getCause();
+		return stripException(throwable, CompletionException.class);
+	}
+
+	/**
+	 * Unpacks an specified exception and returns its cause. Otherwise the given
+	 * {@link Throwable} is returned.
+	 *
+	 * @param throwableToStrip to strip
+	 * @param typeToStrip type to strip
+	 * @return Unpacked cause or given Throwable if not packed
+	 */
+	public static Throwable stripException(Throwable throwableToStrip, Class<? extends Throwable> typeToStrip) {
+		while (typeToStrip.isAssignableFrom(throwableToStrip.getClass()) && throwableToStrip.getCause() != null) {
+			throwableToStrip = throwableToStrip.getCause();
 		}
 
-		return throwable;
+		return throwableToStrip;
 	}
 
 	/**
@@ -395,6 +443,18 @@ public final class ExceptionUtils {
 			throw ((SerializedThrowable) current).deserializeError(classLoader);
 		} else {
 			throw throwable;
+		}
+	}
+
+	/**
+	 * Checks whether the given exception is a {@link InterruptedException} and sets
+	 * the interrupted flag accordingly.
+	 *
+	 * @param e to check whether it is an {@link InterruptedException}
+	 */
+	public static void checkInterrupted(Throwable e) {
+		if (e instanceof InterruptedException) {
+			Thread.currentThread().interrupt();
 		}
 	}
 

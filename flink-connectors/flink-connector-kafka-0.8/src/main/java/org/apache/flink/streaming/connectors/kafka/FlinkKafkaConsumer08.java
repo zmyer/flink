@@ -28,15 +28,15 @@ import org.apache.flink.streaming.connectors.kafka.internals.AbstractFetcher;
 import org.apache.flink.streaming.connectors.kafka.internals.AbstractPartitionDiscoverer;
 import org.apache.flink.streaming.connectors.kafka.internals.Kafka08Fetcher;
 import org.apache.flink.streaming.connectors.kafka.internals.Kafka08PartitionDiscoverer;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaDeserializationSchemaWrapper;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicsDescriptor;
-import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchema;
-import org.apache.flink.streaming.util.serialization.KeyedDeserializationSchemaWrapper;
 import org.apache.flink.util.PropertiesUtil;
 import org.apache.flink.util.SerializedValue;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +118,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	/**
 	 * Creates a new Kafka streaming source consumer for Kafka 0.8.x
 	 *
-	 * <p>This constructor allows passing a {@see KeyedDeserializationSchema} for reading key/value
+	 * <p>This constructor allows passing a {@see KafkaDeserializationSchema} for reading key/value
 	 * pairs, offsets, and topic names from Kafka.
 	 *
 	 * @param topic
@@ -128,7 +128,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 * @param props
 	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
 	 */
-	public FlinkKafkaConsumer08(String topic, KeyedDeserializationSchema<T> deserializer, Properties props) {
+	public FlinkKafkaConsumer08(String topic, KafkaDeserializationSchema<T> deserializer, Properties props) {
 		this(Collections.singletonList(topic), deserializer, props);
 	}
 
@@ -145,7 +145,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 *           The properties that are used to configure both the fetcher and the offset handler.
 	 */
 	public FlinkKafkaConsumer08(List<String> topics, DeserializationSchema<T> deserializer, Properties props) {
-		this(topics, new KeyedDeserializationSchemaWrapper<>(deserializer), props);
+		this(topics, new KafkaDeserializationSchemaWrapper<>(deserializer), props);
 	}
 
 	/**
@@ -160,7 +160,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 * @param props
 	 *           The properties that are used to configure both the fetcher and the offset handler.
 	 */
-	public FlinkKafkaConsumer08(List<String> topics, KeyedDeserializationSchema<T> deserializer, Properties props) {
+	public FlinkKafkaConsumer08(List<String> topics, KafkaDeserializationSchema<T> deserializer, Properties props) {
 		this(topics, null, deserializer, props);
 	}
 
@@ -181,7 +181,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 */
 	@PublicEvolving
 	public FlinkKafkaConsumer08(Pattern subscriptionPattern, DeserializationSchema<T> valueDeserializer, Properties props) {
-		this(subscriptionPattern, new KeyedDeserializationSchemaWrapper<>(valueDeserializer), props);
+		this(subscriptionPattern, new KafkaDeserializationSchemaWrapper<>(valueDeserializer), props);
 	}
 
 	/**
@@ -192,7 +192,7 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 * {@link FlinkKafkaConsumer08#KEY_PARTITION_DISCOVERY_INTERVAL_MILLIS} in the properties), topics
 	 * with names matching the pattern will also be subscribed to as they are created on the fly.
 	 *
-	 * <p>This constructor allows passing a {@see KeyedDeserializationSchema} for reading key/value
+	 * <p>This constructor allows passing a {@see KafkaDeserializationSchema} for reading key/value
 	 * pairs, offsets, and topic names from Kafka.
 	 *
 	 * @param subscriptionPattern
@@ -203,14 +203,14 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	 *           The properties used to configure the Kafka consumer client, and the ZooKeeper client.
 	 */
 	@PublicEvolving
-	public FlinkKafkaConsumer08(Pattern subscriptionPattern, KeyedDeserializationSchema<T> deserializer, Properties props) {
+	public FlinkKafkaConsumer08(Pattern subscriptionPattern, KafkaDeserializationSchema<T> deserializer, Properties props) {
 		this(null, subscriptionPattern, deserializer, props);
 	}
 
 	private FlinkKafkaConsumer08(
 			List<String> topics,
 			Pattern subscriptionPattern,
-			KeyedDeserializationSchema<T> deserializer,
+			KafkaDeserializationSchema<T> deserializer,
 			Properties props) {
 
 		super(
@@ -272,6 +272,13 @@ public class FlinkKafkaConsumer08<T> extends FlinkKafkaConsumerBase<T> {
 	protected boolean getIsAutoCommitEnabled() {
 		return PropertiesUtil.getBoolean(kafkaProperties, "auto.commit.enable", true) &&
 				PropertiesUtil.getLong(kafkaProperties, "auto.commit.interval.ms", 60000) > 0;
+	}
+
+	@Override
+	protected Map<KafkaTopicPartition, Long> fetchOffsetsWithTimestamp(Collection<KafkaTopicPartition> partitions, long timestamp) {
+		// this should not be reached, since we do not expose the timestamp-based startup feature in version 0.8.
+		throw new UnsupportedOperationException(
+			"Fetching partition offsets using timestamps is only supported in Kafka versions 0.10 and above.");
 	}
 
 	// ------------------------------------------------------------------------
